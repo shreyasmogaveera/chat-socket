@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iChat — Real-Time Glass Messenger</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Socket.io: Local server with CDN fallback -->
+    <script src="http://localhost:8000/socket.io/socket.io.js" onerror="this.onerror=null;this.src='https://cdn.socket.io/4.8.1/socket.io.min.js';"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Background Ambient Glows -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+
+    <div class="app-layout">
+        <!-- Main Chat Card -->
+        <main class="chat-card">
+            <!-- App Header -->
+            <header class="chat-header">
+                <div class="header-left">
+                    <div class="brand-avatar">
+                        <img class="logo" src="chat.png" alt="iChat Logo" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
+                        <div id="logo-fallback" class="logo-fallback" style="display:none;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </div>
+                        <span class="status-indicator online" id="statusIndicator"></span>
+                    </div>
+                    <div class="brand-info">
+                        <div class="brand-title-wrap">
+                            <h1 class="brand-name">iChat</h1>
+                            <span class="live-pill" id="connectionStatus">Connecting...</span>
+                        </div>
+                        <p class="brand-subtitle" id="roomSubtext">Real-time WebSocket Chatroom</p>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <!-- Sound Toggle Button -->
+                    <button id="soundToggleBtn" class="icon-btn" title="Toggle audio chime" aria-label="Toggle sound">
+                        <svg id="soundIconOn" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        </svg>
+                        <svg id="soundIconOff" class="hidden" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <line x1="23" y1="9" x2="17" y2="15"></line>
+                            <line x1="17" y1="9" x2="23" y2="15"></line>
+                        </svg>
+                    </button>
+
+                    <!-- Clear Chat Button -->
+                    <button id="clearChatBtn" class="icon-btn" title="Clear message feed" aria-label="Clear chat">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+
+                    <!-- User Profile Pill -->
+                    <div class="user-badge" id="currentUserBadge" title="Click to change your nickname">
+                        <div class="user-avatar-small" id="currentUserAvatar">U</div>
+                        <span class="user-badge-name" id="currentUserName">Joining...</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Chat Message Feed -->
+            <section class="messages-viewport" id="chatViewport">
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon-wrap">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"></path>
+                            <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"></path>
+                        </svg>
+                    </div>
+                    <h3>Start the Conversation</h3>
+                    <p>No messages yet. Send a greeting to everyone in the room!</p>
+                </div>
+
+                <div class="container messages-container" id="messagesContainer">
+                    <!-- Dynamic messages append here -->
+                </div>
+
+                <!-- Floating Scroll to Bottom Button -->
+                <button class="scroll-bottom-btn hidden" id="scrollBottomBtn" aria-label="Scroll to bottom">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    <span>New messages</span>
+                </button>
+            </section>
+
+            <!-- Quick Reaction Emoji Bar -->
+            <div class="quick-reactions" id="quickReactions">
+                <button type="button" class="reaction-chip" data-emoji="👋">👋 Hello</button>
+                <button type="button" class="reaction-chip" data-emoji="🔥">🔥 Lit</button>
+                <button type="button" class="reaction-chip" data-emoji="👍">👍 Nice</button>
+                <button type="button" class="reaction-chip" data-emoji="❤️">❤️ Love</button>
+                <button type="button" class="reaction-chip" data-emoji="🚀">🚀 Super</button>
+                <button type="button" class="reaction-chip" data-emoji="😂">😂 Haha</button>
+            </div>
+
+            <!-- Footer Message Input Area -->
+            <footer class="send chat-footer">
+                <form action="#" id="send-container" class="composer-form">
+                    <!-- Emoji Picker Trigger -->
+                    <div class="emoji-menu-wrapper">
+                        <button type="button" id="emojiToggleBtn" class="composer-action-btn" title="Pick an emoji" aria-label="Add emoji">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                            </svg>
+                        </button>
+                        
+                        <!-- Mini Emoji Popover -->
+                        <div class="emoji-popover hidden" id="emojiPopover">
+                            <div class="emoji-grid">
+                                <button type="button" class="emoji-item">😀</button>
+                                <button type="button" class="emoji-item">😂</button>
+                                <button type="button" class="emoji-item">😍</button>
+                                <button type="button" class="emoji-item">😎</button>
+                                <button type="button" class="emoji-item">🥳</button>
+                                <button type="button" class="emoji-item">🤔</button>
+                                <button type="button" class="emoji-item">👍</button>
+                                <button type="button" class="emoji-item">🙌</button>
+                                <button type="button" class="emoji-item">👏</button>
+                                <button type="button" class="emoji-item">🔥</button>
+                                <button type="button" class="emoji-item">❤️</button>
+                                <button type="button" class="emoji-item">🎉</button>
+                                <button type="button" class="emoji-item">🚀</button>
+                                <button type="button" class="emoji-item">✨</button>
+                                <button type="button" class="emoji-item">💯</button>
+                                <button type="button" class="emoji-item">👀</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Box -->
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="messageInp" 
+                            placeholder="Type your message..." 
+                            autocomplete="off"
+                            maxlength="1000"
+                        >
+                    </div>
+
+                    <!-- Send Button -->
+                    <button class="btn send-btn" type="submit" id="sendBtn" title="Send message (Enter)">
+                        <span>Send</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </form>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Clean Modern Join Modal -->
+    <div class="modal-backdrop" id="joinModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-badge-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <h2>Welcome to iChat</h2>
+                <p>Choose your display nickname to start chatting in real time.</p>
+            </div>
+
+            <form id="joinForm" class="modal-form">
+                <div class="avatar-preview-wrap">
+                    <div class="avatar-preview" id="modalAvatarPreview">?</div>
+                    <span class="avatar-hint">Your avatar preview</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="nameInput">Your Nickname</label>
+                    <input 
+                        type="text" 
+                        id="nameInput" 
+                        placeholder="e.g. Alex Rivera" 
+                        maxlength="24"
+                        required 
+                        autocomplete="nickname"
+                        autofocus
+                    >
+                    <span class="input-error-msg" id="nameError">Please enter a valid nickname</span>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="modal-btn-primary" id="joinBtn">
+                        <span>Enter Chatroom</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script defer src="js/client.js"></script>
+</body>
+</html>

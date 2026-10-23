@@ -1,0 +1,21 @@
+# Node.js dependencies (MUST NOT be pushed to GitHub)
+node_modules/
+*/node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files (if used in future)
+.env
+.env.local
+
+# Operating System files
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editor / IDE folders
+.vscode/
+.idea/
